@@ -6,11 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Edit2, LogOut, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface ReferenceNumber {
   id: number;
-  input: string;
-  outputs: string[];
+  input_number: string;
+  output_number1: string;
+  output_number2: string;
+  output_number3: string;
+  output_number4: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const AdminDashboard = () => {
@@ -20,9 +26,13 @@ const AdminDashboard = () => {
 
   const fetchReferences = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/references');
-      const data = await response.json();
-      setReferenceNumbers(data);
+      const { data, error } = await supabase
+        .from('reference_numbers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReferenceNumbers(data || []);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -35,7 +45,7 @@ const AdminDashboard = () => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [newInput, setNewInput] = useState("");
   const [searchResults, setSearchResults] = useState<ReferenceNumber | null>(null);
-  const [outputs, setOutputs] = useState<string[]>(["", "", ""]);
+  const [outputs, setOutputs] = useState<string[]>(["", "", "", ""]);
   const [newOutputs, setNewOutputs] = useState("");
 
   useEffect(() => {
@@ -65,22 +75,25 @@ const AdminDashboard = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Debes ingresar un número de entrada y los tres números de salida",
+        description: "Debes ingresar un número de entrada y los cuatro números de salida",
       });
       return;
     }
 
     try {
-      await fetch(`http://localhost:3001/api/references/${referenceNumbers[index].id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: newInput,
-          outputs: outputs
+      const { error } = await supabase
+        .from('reference_numbers')
+        .update({
+          input_number: newInput,
+          output_number1: outputs[0],
+          output_number2: outputs[1],
+          output_number3: outputs[2],
+          output_number4: outputs[3]
         })
-      });
+        .eq('id', referenceNumbers[index].id);
+
+      if (error) throw error;
+      
       fetchReferences();
       clearForm();
       toast({
@@ -101,22 +114,24 @@ const AdminDashboard = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Debes ingresar un número de entrada y los tres números de salida",
+        description: "Debes ingresar un número de entrada y los cuatro números de salida",
       });
       return;
     }
 
     try {
-      await fetch('http://localhost:3001/api/references', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: newInput,
-          outputs
-        })
-      });
+      const { error } = await supabase
+        .from('reference_numbers')
+        .insert({
+          input_number: newInput,
+          output_number1: outputs[0],
+          output_number2: outputs[1],
+          output_number3: outputs[2],
+          output_number4: outputs[3]
+        });
+
+      if (error) throw error;
+
       fetchReferences();
       clearForm();
       toast({
@@ -134,9 +149,13 @@ const AdminDashboard = () => {
 
   const handleDelete = async (index: number) => {
     try {
-      await fetch(`http://localhost:3001/api/references/${referenceNumbers[index].id}`, {
-        method: 'DELETE'
-      });
+      const { error } = await supabase
+        .from('reference_numbers')
+        .delete()
+        .eq('id', referenceNumbers[index].id);
+
+      if (error) throw error;
+
       fetchReferences();
       toast({
         title: "Éxito",
@@ -153,8 +172,13 @@ const AdminDashboard = () => {
 
   const startEditing = (index: number) => {
     setEditingIndex(index);
-    setNewInput(referenceNumbers[index].input);
-    setOutputs(referenceNumbers[index].outputs);
+    setNewInput(referenceNumbers[index].input_number);
+    setOutputs([
+      referenceNumbers[index].output_number1,
+      referenceNumbers[index].output_number2,
+      referenceNumbers[index].output_number3,
+      referenceNumbers[index].output_number4
+    ]);
   };
 
   return (
@@ -235,17 +259,27 @@ const AdminDashboard = () => {
                         setNewInput(value);
                         if (value.length === 2) {
                           try {
-                            const response = await fetch('http://localhost:3001/api/references');
-                            const data = await response.json();
-                            const match = data.find((ref: ReferenceNumber) => ref.input === value);
-                            if (match) {
-                              setOutputs(match.outputs);
+                            const { data, error } = await supabase
+                              .from('reference_numbers')
+                              .select('*')
+                              .eq('input_number', value)
+                              .single();
+
+                            if (error && error.code !== 'PGRST116') throw error;
+
+                            if (data) {
+                              setOutputs([
+                                data.output_number1,
+                                data.output_number2,
+                                data.output_number3,
+                                data.output_number4
+                              ]);
                               toast({
                                 title: "Números encontrados",
-                                description: `Salidas: ${match.outputs.join(', ')}`
+                                description: `Salidas: ${[data.output_number1, data.output_number2, data.output_number3, data.output_number4].join(', ')}`
                               });
                             } else {
-                              setOutputs(["", "", ""]);
+                              setOutputs(["", "", "", ""]);
                             }
                           } catch (error) {
                             console.error('Error buscando referencia:', error);
@@ -264,10 +298,10 @@ const AdminDashboard = () => {
                   <div className="space-y-2">
                     <Label className="text-white flex items-center gap-2">
                       <span className="text-white/70">Números de Salida</span>
-                      <span className="text-xs text-white/50">(Tres números)</span>
+                      <span className="text-xs text-white/50">(Cuatro números)</span>
                     </Label>
-                    <div className="grid grid-cols-3 gap-4">
-                      {[0, 1, 2].map((i) => (
+                    <div className="grid grid-cols-4 gap-4">
+                      {[0, 1, 2, 3].map((i) => (
                         <Input
                           key={i}
                           value={outputs[i]}
@@ -303,10 +337,10 @@ const AdminDashboard = () => {
                   >
                     <div className="space-y-1">
                       <div className="text-lg font-medium text-white">
-                        Entrada: {ref.input}
+                        Entrada: {ref.input_number}
                       </div>
                       <div className="text-white/70">
-                        Salidas: {ref.outputs.join(", ")}
+                        Salidas: {[ref.output_number1, ref.output_number2, ref.output_number3, ref.output_number4].join(", ")}
                       </div>
                     </div>
                     <div className="space-x-2">

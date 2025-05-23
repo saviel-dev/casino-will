@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Sparkles, TrendingUp, Target, Crown, Facebook, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 // We need to create a custom TikTok icon since it's not available in lucide-react
 const TikTokIcon = (props) => (
@@ -26,7 +27,7 @@ const TikTokIcon = (props) => (
 );
 
 interface PredictionResult {
-  numbers: number[];
+  numbers: string[];
   confidence: number;
   algorithm: string;
 }
@@ -40,13 +41,20 @@ const LotteryPredictor = () => {
   // Función para buscar números en la base de datos
   const findNumbersInDatabase = async (inputNum: string): Promise<PredictionResult | null> => {
     try {
-      const response = await fetch('http://localhost:3001/api/references');
-      const data = await response.json();
-      const match = data.find((ref: { input: string, outputs: string[] }) => ref.input === inputNum);
+      const { data, error } = await supabase
+        .from('reference_numbers')
+        .select('*')
+        .eq('input_number', inputNum)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error buscando en la base de datos:', error);
+        return null;
+      }
       
-      if (match) {
+      if (data) {
         return {
-          numbers: match.outputs.map(n => parseInt(n)),
+          numbers: [data.output_number1, data.output_number2, data.output_number3, data.output_number4],
           confidence: 100, // 100% confidence porque son números exactos
           algorithm: 'Base de Datos'
         };
@@ -83,14 +91,14 @@ const LotteryPredictor = () => {
     setIsGenerating(false);
   };
 
-  const NumberCard = ({ number, index }: { number: number; index: number }) => (
+  const NumberCard = ({ number, index }: { number: string; index: number }) => (
     <div 
       className={`number-card p-6 text-center ${animateCards ? 'animate-number-reveal' : ''}`}
       style={{ animationDelay: `${index * 0.2}s` }}
     >
       <div className="text-3xl font-bold text-casino-gold mb-2">{number}</div>
       <div className="text-sm text-slate-300">
-        {index === 0 ? 'Principal' : index === 1 ? 'Segundo' : 'Tercero'}
+        {index === 0 ? 'Principal' : index === 1 ? 'Segundo' : index === 2 ? 'Tercero' : 'Cuarto'}
       </div>
     </div>
   );
@@ -191,12 +199,12 @@ const LotteryPredictor = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   {prediction.numbers.map((number, index) => (
                     <Card key={index} className="bg-gradient-to-br from-black/50 to-black/70 border-casino-gold/50 hover:border-casino-gold transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-casino-gold/20">
                       <CardHeader>
                         <CardTitle className="text-casino-gold text-center text-lg">
-                          {index === 0 ? 'Primer Número' : index === 1 ? 'Segundo Número' : 'Tercer Número'}
+                          {index === 0 ? 'Primer Número' : index === 1 ? 'Segundo Número' : index === 2 ? 'Tercer Número' : 'Cuarto Número'}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -308,18 +316,6 @@ const FloatingParticles = () => (
         }}
       />
     ))}
-  </div>
-);
-
-const NumberCard = ({ number, index }: { number: number; index: number }) => (
-  <div 
-    className={`number-card p-6 text-center ${animateCards ? 'animate-number-reveal' : ''}`}
-    style={{ animationDelay: `${index * 0.2}s` }}
-  >
-    <div className="text-3xl font-bold text-casino-gold mb-2">{number}</div>
-    <div className="text-sm text-slate-300">
-      {index === 0 ? 'Principal' : index === 1 ? 'Segundo' : 'Tercero'}
-    </div>
   </div>
 );
 
