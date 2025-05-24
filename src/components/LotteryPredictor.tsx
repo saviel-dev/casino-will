@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,11 +40,26 @@ const LotteryPredictor = () => {
   // Función para buscar números en la base de datos
   const findNumbersInDatabase = async (inputNum: string): Promise<PredictionResult | null> => {
     try {
-      const { data, error } = await supabase
+      console.log('Buscando en la base de datos con número:', inputNum);
+      
+      // Primero intentamos con el número tal cual
+      let { data, error } = await supabase
         .from('reference_numbers')
         .select('*')
         .eq('input_number', inputNum)
         .single();
+
+      // Si no encontramos resultados y el número es de un dígito, intentamos con el formato 0X
+      if (!data && inputNum.length === 1) {
+        const paddedNum = inputNum.padStart(2, '0');
+        console.log('Intentando con número con padding:', paddedNum);
+        
+        ({ data, error } = await supabase
+          .from('reference_numbers')
+          .select('*')
+          .eq('input_number', paddedNum)
+          .single());
+      }
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error buscando en la base de datos:', error);
@@ -53,12 +67,15 @@ const LotteryPredictor = () => {
       }
       
       if (data) {
+        console.log('Datos encontrados:', data);
         return {
           numbers: [data.output_number1, data.output_number2, data.output_number3, data.output_number4],
-          confidence: 100, // 100% confidence porque son números exactos
+          confidence: 100,
           algorithm: 'Base de Datos'
         };
       }
+
+      console.log('No se encontraron datos para el número:', inputNum);
       return null;
     } catch (error) {
       console.error('Error buscando en la base de datos:', error);
@@ -67,17 +84,24 @@ const LotteryPredictor = () => {
   };
 
   const handlePredict = async () => {
-    const num = inputNumber.padStart(2, '0'); // Aseguramos que tenga 2 dígitos
-    
-    if (num.length !== 2 || isNaN(parseInt(num)) || parseInt(num) < 0 || parseInt(num) > 36) {
-      toast.error('Por favor ingresa un número válido entre 00 y 36');
+    if (!inputNumber) {
+      toast.error('Por favor ingresa un número');
       return;
     }
+
+    const numInt = parseInt(inputNumber);
+    if (isNaN(numInt) || numInt < 0 || numInt > 36) {
+      toast.error('Por favor ingresa un número válido entre 0 y 36');
+      return;
+    }
+
+    // Usar el número tal como fue ingresado
+    console.log('Iniciando búsqueda con número:', inputNumber);
 
     setIsGenerating(true);
     setAnimateCards(false);
     
-    const result = await findNumbersInDatabase(num);
+    const result = await findNumbersInDatabase(inputNumber);
     
     if (result) {
       setPrediction(result);
@@ -89,19 +113,44 @@ const LotteryPredictor = () => {
     }
     
     setIsGenerating(false);
+
+
   };
 
-  const NumberCard = ({ number, index }: { number: string; index: number }) => (
-    <div 
-      className={`number-card p-6 text-center ${animateCards ? 'animate-number-reveal' : ''}`}
-      style={{ animationDelay: `${index * 0.2}s` }}
-    >
-      <div className="text-3xl font-bold text-casino-gold mb-2">{number}</div>
-      <div className="text-sm text-slate-300">
-        {index === 0 ? 'Principal' : index === 1 ? 'Segundo' : index === 2 ? 'Tercero' : 'Cuarto'}
-      </div>
-    </div>
-  );
+  const NumberCard = ({ number, index }: { number: string; index: number }) => {
+    const lotteryMap: { [key: string]: { image: string; alt: string } } = {
+      '1': { image: '/src/img/loto activo.png', alt: 'LOTTO ACTIVO' },
+      '2': { image: '/src/img/granjita.png', alt: 'GRANJITA' },
+      '3': { image: '/src/img/selva.png', alt: 'SELVA' },
+      '4': { image: '/src/img/lottoVenezuela.png', alt: 'LOTTO VENEZUELA' },
+      '5': { image: '/src/img/ruletaBrasil.png', alt: 'RULETON BRASIL' }
+    };
+
+    const lottery = lotteryMap[(index + 1).toString()];
+
+    return (
+      <Card
+        className={`w-40 h-48 flex flex-col items-center justify-between text-center transform transition-all duration-500 ${animateCards ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} bg-slate-900 border-casino-gold/30`}
+        style={{ transitionDelay: `${index * 200}ms` }}
+      >
+        <CardHeader className="pb-2 pt-2">
+          <CardTitle className="text-sm text-casino-gold">
+            <img 
+              src={lottery.image} 
+              alt={lottery.alt} 
+              className="w-16 h-16 object-contain mx-auto"
+            />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <div className="text-3xl font-bold text-casino-gold mb-2">{number.toString().padStart(2, '0')}</div>
+          <div className="text-sm text-slate-300">
+            {index === 0 ? 'Principal' : index === 1 ? 'Segundo' : index === 2 ? 'Tercero' : 'Cuarto'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const FloatingParticles = () => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -153,11 +202,24 @@ const LotteryPredictor = () => {
             <CardContent className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
                 <Input
-                  type="number"
-                  min="0"
-                  max="36"
+                  type="text"
+                  pattern="\d*"
+                  maxLength={2}
                   value={inputNumber}
-                  onChange={(e) => setInputNumber(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Permitir campo vacío o números
+                    if (value === '' || /^\d{1,2}$/.test(value)) {
+                      if (value === '') {
+                        setInputNumber('');
+                      } else {
+                        const num = parseInt(value);
+                        if (!isNaN(num) && num >= 0 && num <= 36) {
+                          setInputNumber(value);
+                        }
+                      }
+                    }
+                  }}
                   placeholder="Ingresa tu número"
                   className="text-center text-xl font-bold bg-slate-800 border-casino-gold/30 text-white max-w-xs"
                 />
