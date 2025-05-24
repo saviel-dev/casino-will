@@ -119,11 +119,11 @@ const LotteryPredictor = () => {
 
   const NumberCard = ({ number, index }: { number: string; index: number }) => {
     const lotteryMap: { [key: string]: { image: string; alt: string } } = {
-      '1': { image: '/src/img/loto activo.png', alt: 'LOTTO ACTIVO' },
-      '2': { image: '/src/img/granjita.png', alt: 'GRANJITA' },
-      '3': { image: '/src/img/selva.png', alt: 'SELVA' },
-      '4': { image: '/src/img/lottoVenezuela.png', alt: 'LOTTO VENEZUELA' },
-      '5': { image: '/src/img/ruletaBrasil.png', alt: 'RULETON BRASIL' }
+      '1': { image: '../img/loto activo.png', alt: 'LOTTO ACTIVO' },
+      '2': { image: '../img/granjita.png', alt: 'GRANJITA' },
+      '3': { image: '../img/selva.png', alt: 'SELVA' },
+      '4': { image: '../img/lottoVenezuela.png', alt: 'LOTTO VENEZUELA' },
+      '5': { image: '../img/ruletaBrasil.png', alt: 'RULETON BRASIL' }
     };
 
     const lottery = lotteryMap[(index + 1).toString()];
