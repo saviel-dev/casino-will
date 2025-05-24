@@ -135,7 +135,7 @@ const LotteryPredictor = () => {
 
     return (
       <Card
-        className={`w-40 h-48 flex flex-col items-center justify-between text-center transform transition-all duration-500 ${animateCards ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} bg-slate-900 border-casino-gold/30`}
+        className={`w-48 h-56 flex flex-col items-center justify-between text-center transform transition-all duration-500 ${animateCards ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} bg-slate-900 border-casino-gold/30`}
         style={{ transitionDelay: `${index * 200}ms` }}
       >
         <CardHeader className="pb-2 pt-2">
@@ -143,7 +143,7 @@ const LotteryPredictor = () => {
             <img 
               src={lottery.image} 
               alt={lottery.alt} 
-              className="w-16 h-16 object-contain mx-auto"
+              className="w-24 h-24 object-contain mx-auto drop-shadow-lg"
             />
           </CardTitle>
         </CardHeader>
