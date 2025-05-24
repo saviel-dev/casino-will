@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import lottoActivo from '../assets/loto activo.png';
+import granjita from '../assets/granjita.png';
+import selva from '../assets/selva.png';
+import lottoVenezuela from '../assets/lottoVenezuela.png';
+import ruletaBrasil from '../assets/ruletaBrasil.png';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,11 +124,11 @@ const LotteryPredictor = () => {
 
   const NumberCard = ({ number, index }: { number: string; index: number }) => {
     const lotteryMap: { [key: string]: { image: string; alt: string } } = {
-      '1': { image: '/img/loto activo.png', alt: 'LOTTO ACTIVO' },
-      '2': { image: '/img/granjita.png', alt: 'GRANJITA' },
-      '3': { image: '/img/selva.png', alt: 'SELVA' },
-      '4': { image: '/img/lottoVenezuela.png', alt: 'LOTTO VENEZUELA' },
-      '5': { image: '/img/ruletaBrasil.png', alt: 'RULETON BRASIL' }
+      '1': { image: lottoActivo, alt: 'LOTTO ACTIVO' },
+      '2': { image: granjita, alt: 'GRANJITA' },
+      '3': { image: selva, alt: 'SELVA' },
+      '4': { image: lottoVenezuela, alt: 'LOTTO VENEZUELA' },
+      '5': { image: ruletaBrasil, alt: 'RULETON BRASIL' }
     };
 
     const lottery = lotteryMap[(index + 1).toString()];
