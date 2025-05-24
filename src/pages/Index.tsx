@@ -2,11 +2,12 @@ import LotteryPredictor from '@/components/LotteryPredictor';
 import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import backgroundImage from '../assets/fondo.png';
 
 const Index = () => {
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/src/img/fondo.png')] bg-cover bg-center bg-no-repeat blur-[4px]"></div>
+      <div className="absolute inset-0" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', filter: 'blur(4px)' }}></div>
       <div className="absolute inset-0 bg-black/60"></div>
       <div className="container mx-auto pt-8 relative z-10">
         <div className="flex justify-end mb-6">
